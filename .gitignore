@@ -1,0 +1,7 @@
+.env
+node_modules
+private.pem
+public.pem
+
+node_modules/
+package-lock.json

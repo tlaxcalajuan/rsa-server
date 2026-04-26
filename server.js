@@ -1,10 +1,19 @@
 // server.js
+require('dotenv').config();
+
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
+const path = require('path');
 
-const publicKey = fs.readFileSync('public.pem', 'utf8');
-const privateKey = fs.readFileSync('private.pem', 'utf8');
+const publicKeyPath = process.env.PUBLIC_KEY_PATH || path.resolve(__dirname, 'public.pem');
+const privateKeyPath = process.env.PRIVATE_KEY_PATH || path.resolve(__dirname, 'private.pem');
+
+const publicKey = fs.readFileSync(publicKeyPath, 'utf8');
+const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+
+//const publicKey = fs.readFileSync('public.pem', 'utf8');
+//const privateKey = fs.readFileSync('private.pem', 'utf8');
 
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/encrypt') {
@@ -18,13 +27,19 @@ const server = http.createServer((req, res) => {
       try {
         const { text } = JSON.parse(body);
 
+        if (!text) {
+            res.writeHead(400);
+            return res.end('Missing "text" field');
+        }
+
         const buffer = Buffer.from(text, 'utf-8');
 
         const encrypted = crypto.publicEncrypt(
           {
             key: publicKey,
             //padding: crypto.constants.RSA_PKCS1_PADDING,
-            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+            padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+            oaepHash: 'sha256'
           },
           buffer
         );
@@ -51,13 +66,19 @@ const server = http.createServer((req, res) => {
     try {
       const { encrypted } = JSON.parse(body);
 
+      if (!encrypted) {
+            res.writeHead(400);
+            return res.end('Missing "encrypted" field');
+        }
+
       const buffer = Buffer.from(encrypted, 'base64');
 
       const decrypted = crypto.privateDecrypt(
         {
           key: privateKey,
           //padding: crypto.constants.RSA_PKCS1_PADDING,
-          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: 'sha256'
         },
         buffer
       );
@@ -80,6 +101,8 @@ const server = http.createServer((req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 3000;
+
 server.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+  console.log(`Server running on http://localhost:${PORT}`);
 });

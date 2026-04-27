@@ -16,6 +16,18 @@ const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 //const privateKey = fs.readFileSync('private.pem', 'utf8');
 
 const server = http.createServer((req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+
+  // Handle OPTIONS preflight request
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/encrypt') {
     let body = '';
 
